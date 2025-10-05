@@ -1,0 +1,36 @@
+<!-- events/templates/events/base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- This script loads Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>{% block title %}Aurora Project{% endblock %}</title>
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans">
+
+    <nav class="bg-gray-800 border-b border-gray-700">
+        <div class="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-6">
+                <a href="{% url 'event_timeline' %}" class="text-2xl font-bold text-white">🌌 Aurora Project</a>
+                <!-- Add this new link -->
+                <a href="{% url 'aurora_forecast' %}" class="text-sm font-medium text-gray-300 hover:text-blue-400 transition duration-200">
+                    Live Forecast
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-4xl mx-auto p-4 md:p-6">
+        {% block content %}
+        <!-- The content of other templates will be injected here -->
+        {% endblock %}
+    </main>
+
+    <footer class="text-center py-4 mt-8 border-t border-gray-700 text-gray-500">
+        <p>&copy; 2025 Aurora Project. Connecting the cosmos to the community.</p>
+    </footer>
+
+</body>
+</html>

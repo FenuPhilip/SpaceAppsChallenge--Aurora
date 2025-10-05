@@ -1,0 +1,167 @@
+from django.db import models
+
+class SpaceWeatherEvent(models.Model):
+    EVENT_TYPES = [
+        ('GEOMAGNETIC_STORM', 'Geomagnetic Storm'),
+        ('SOLAR_FLARE', 'Solar Flare'),
+        ('OTHER', 'Other'),
+    ]
+
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPES)
+    start_time = models.DateTimeField()
+    max_kp_index = models.FloatField(null=True, blank=True)
+    solar_wind_speed = models.FloatField(null=True, blank=True)
+    bz_gsm = models.FloatField(null=True, blank=True)
+
+    def __str__(self):
+        return f"{self.get_event_type_display()} - {self.start_time}"
+
+
+class UserStory(models.Model):
+    event = models.ForeignKey(SpaceWeatherEvent, on_delete=models.CASCADE, related_name='stories')
+    author_name = models.CharField(max_length=100, default="Anonymous")  # ✅ REQUIRED
+    story_text = models.TextField()
+    submission_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Story by {self.author_name} on {self.submission_time:%Y-%m-%d}"
+
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import SpaceWeatherEvent, UserStory
+from .forms import UserStoryForm
+
+def event_timeline(request):
+    events = SpaceWeatherEvent.objects.order_by('-start_time')
+    return render(request, 'events/event_timeline.html', {'events': events})
+
+def event_detail(request, event_id):
+    event = get_object_or_404(SpaceWeatherEvent, pk=event_id)
+    
+    if request.method == 'POST':
+        form = UserStoryForm(request.POST)
+        if form.is_valid():
+            new_story = form.save(commit=False)
+            new_story.event = event
+            new_story.save()
+            return redirect('event_detail', event_id=event.id)
+    else:
+        form = UserStoryForm()
+
+    stories = event.stories.order_by('-submission_time')
+    
+    context = {
+        'event': event,
+        'stories': stories,
+        'form': form
+    }
+    
+    return render(request, 'events/event_detail.html', context)
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Event Details</title>
+</head>
+<body>
+
+    <h1>Event: {{ event.get_event_type_display }}</h1>
+    <p><strong>Date:</strong> {{ event.start_time }}</p>
+    <p><strong>Max Kp-Index:</strong> {{ event.max_kp_index }}</p>
+
+    <hr>
+
+    <h2>Add Your Story</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Submit Story</button>
+    </form>
+
+    <hr>
+
+    <h2>Community Stories</h2>
+    {% if stories %}
+        <ul>
+            {% for story in stories %}
+                <li>
+                    <p>"{{ story.story_text }}"</p>
+                    <p><em>- {{ story.author_name }} on {{ story.submission_time|date:"F j, Y, g:i a" }}</em></p>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No stories have been shared for this event yet. Be the first!</p>
+    {% endif %}
+
+    <br>
+    <a href="{% url 'event_timeline' %}">Back to Timeline</a>
+
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Weather Timeline - Aurora Project</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 2em;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .event {
+            border-bottom: 1px solid #ddd;
+            padding: 1em 0;
+        }
+        .event:last-child {
+            border-bottom: none;
+        }
+        .event a {
+            color: #2980b9;
+            text-decoration: none;
+        }
+        .event a:hover {
+            text-decoration: underline;
+        }
+        p {
+            margin: 0.2em 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Space Weather Event Timeline</h1>
+
+        {% for event in events %}
+            <div class="event">
+                <h2>
+                    <a href="{% url 'event_detail' event.id %}">
+                        {{ event.get_event_type_display }}
+                    </a>
+                </h2>
+                <p><strong>Date:</strong> {{ event.start_time|date:"F j, Y" }}</p>
+                {% if event.max_kp_index %}
+                    <p><strong>Max Kp-index:</strong> {{ event.max_kp_index }}</p>
+                {% endif %}
+            </div>
+        {% empty %}
+            <p>No events found yet.</p>
+        {% endfor %}
+    </div>
+</body>
+</html>

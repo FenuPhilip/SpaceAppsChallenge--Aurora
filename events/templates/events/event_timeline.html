@@ -1,0 +1,32 @@
+<!-- events/templates/events/event_timeline.html -->
+{% extends 'events/base.html' %}
+
+{% block title %}Event Timeline - Aurora Project{% endblock %}
+
+{% block content %}
+    <h1 class="text-3xl font-bold mb-6 text-white">Space Weather Timeline</h1>
+
+    <div class="space-y-4">
+    {% if events %}
+        {% for event in events %}
+            <a href="{% url 'event_detail' event.id %}" class="block bg-gray-800 p-4 rounded-lg shadow-md hover:bg-gray-700 transition duration-200">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-xl font-semibold text-blue-400">{{ event.get_event_type_display }}</h2>
+                        <p class="text-gray-400">{{ event.start_time|date:"F j, Y, P" }}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-lg font-bold text-white">Kp: {{ event.max_kp_index }}</span>
+                        <span class="text-sm text-gray-400 ml-2">→</span>
+                    </div>
+                </div>
+            </a>
+        {% endfor %}
+    {% else %}
+        <div class="bg-gray-800 p-6 rounded-lg text-center">
+            <p class="text-gray-400">No space weather events have been recorded yet.</p>
+            <p class="text-sm mt-2">Run the `fetch_events` command to check for new data from NOAA.</p>
+        </div>
+    {% endif %}
+    </div>
+{% endblock %}
